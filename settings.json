@@ -1,7 +1,7 @@
 {
-    "easy_start": false,
+    "easy_start": true,
     "width": 20,
-    "height": 20,
+    "height": 15,
     "mines": 15,
     "play_sounds": false,
     "allow_commands": true,
@@ -9,6 +9,6 @@
         "host": "127.0.0.1",
         "port": 65432
     },
-    "connect": true,
+    "connect": false,
     "scale": 1
 }

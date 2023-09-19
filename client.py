@@ -4,7 +4,6 @@ import signal
 import socket
 import threading
 import time
-import subprocess
 
 from game import Game
 from globals import HOST, MAX_MSG_LEN, MAX_RETRIES, PATH, PORT, SETTINGS
@@ -28,7 +27,6 @@ class Client(Game):
     def set_settings(self):
         """This method writes the current settings configuration into settings.json in a readable format.
         """
-        self.running = False
 
         with open(PATH[:-6] + "settings.json", "w") as stngs:
             settings: list[str] = json.dumps(SETTINGS).split(", ")
@@ -57,25 +55,20 @@ class Client(Game):
             stngs.write("    " + settings[len(settings) - 1][:-1] + "\n")
             stngs.write("}")
 
-        self.hard_reset()
+        self.reset()
 
     def usr_input(self):
         while True:
-            self.exec_command.wait()
-            inp = Message(self.command_box.text, self.id)
-            self.process_request(msg=inp, origin="client")
-            self.command_box.text = ""
-            self.exec_command.clear()
+            inp = Message(input(), self.id)
+            self.process_request(msg=inp)
     
-    def process_request(self, msg: Message, origin: str = "server"):
+    def process_request(self, msg: Message):
     
         res = None
         data = msg.get_content().split(maxsplit=1)
-        if not data:
-            data = [msg.get_content()]
         match data[0]:
             case "say":
-                print("%s:" % origin, data[1])
+                print("server:", data[1])
                 
             case"client":
                 res = "Hello from client %i" % self.id
@@ -95,13 +88,6 @@ class Client(Game):
                         else:
                             res += " -4"
 
-            case "all":
-                res = ""
-                args = data[1].split()
-                for row in self.grid.contents:
-                    for cell in row:
-                        res += " %s" % cell.data()
-
             case "reveal":
                 args = data[1].split()
                 mine_loc = self.reveal(int(args[0]), int(args[1]))
@@ -112,12 +98,6 @@ class Client(Game):
                 args = data[1].split()
                 self.flag(int(args[0]), int(args[1]))
 
-            case "size":
-                res = "%i,%i" % (SETTINGS["width"], SETTINGS["height"])
-
-            case "solve":
-                pass
-            
             case "setting":
                 args = data[1].split(maxsplit=1)
                 setting = args[0]
@@ -136,14 +116,9 @@ class Client(Game):
                     
             case "reset":
                 self.reset()
-
-            case "reconnect":
-                if origin == "client" and not self.thread.is_alive():
-                    self.thread = threading.Thread(target=self.listen)
-                    self.thread.start()
             
             case "shutdown":
-                print("%s: shutdown requested" % origin)
+                print("server: shutdown requested")
                 os.kill(os.getpid(), signal.SIGTERM)
 
             case _:
@@ -190,13 +165,11 @@ class Client(Game):
                         self.id = None
                         if not self.connect():
                             break
-                        continue
+                        else:
+                            continue
 
                     self.process_request(msg)
 
-    def hard_reset(self):
-        os.system('gnome-terminal -- minesweeper')
-        os.kill(os.getpid(), signal.SIGTERM)
 
     def run(self):
         if SETTINGS["allow_commands"]:

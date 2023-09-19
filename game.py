@@ -6,10 +6,9 @@ import pygame
 
 from cell import Cell
 from grid import Grid
-from globals import (BG_COLOR, CELL_EDGE, COOL, LOSE, MINE, PAUSE_FONT_SIZE, PLAYING, GEAR, DISP, DISP_H, DISP_W, LRB_BORDER, PATH, PORT,
+from globals import (BG_COLOR, CELL_EDGE, COOL, HOST, LOSE, MINE, PAUSE_FONT_SIZE, PLAYING, GEAR, DISP, DISP_H, DISP_W, LRB_BORDER, PATH, PORT,
                      RESET, SETTINGS, DEAD, SHOCKED, SMILE, TOP_BORDER, WIN, BLACK, FONT_SIZE)
 from sprites import SPRITES, HOURGLASS, MINESPR
-from textbox import Textbox
 pygame.init()
 
 
@@ -33,8 +32,6 @@ class Game():
             SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False, create_hitbox=True)
         self.settings_btn.create_hitbox()
         self.reset_btn.create_hitbox()
-        self.command_box = Textbox()
-        self.exec_command = threading.Event()
         self.grid = Grid()
 
 
@@ -161,6 +158,11 @@ class Game():
         self.grid.contents_created = False
         self.grid.troll_mode = False
         self.grid = Grid()
+
+    def hard_reset(self):
+        global DISP
+        
+        pass # TODO
     
     
     def pause(self):
@@ -197,7 +199,6 @@ class Game():
 
             self.settings_btn.draw()
             self.reset_btn.draw()
-            self.command_box.draw()
 
             if self.grid.state != PLAYING:
                 DISP.blit(SPRITES[self.grid.state], (LRB_BORDER, TOP_BORDER))
@@ -222,28 +223,11 @@ class Game():
             for event in pygame.event.get():
                 match event.type:
                     case pygame.MOUSEBUTTONDOWN:
-                        if self.command_box.rect.collidepoint(event.pos):
-                            self.command_box.active = True
-                        else:
-                            self.command_box.active = False
-
                         if self.timer_running.is_set():
-                            self.find_affected_cell(event)
-
+                            self.find_affected_cell(event)                    
                     case pygame.MOUSEMOTION:
                         if self.timer_running.is_set():
                             self.highlight_cell(event)
-
-                    case pygame.KEYDOWN:
-                        match event.key:
-                            case pygame.K_BACKSPACE:
-                                self.command_box.text = self.command_box.text[:-1]
-                            case pygame.K_RETURN:
-                                self.exec_command.set()
-                            case _:
-                                self.command_box.text += event.unicode
-
-
                     case pygame.QUIT:
                         self.running = False
             pygame.display.update()
