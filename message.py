@@ -29,8 +29,9 @@ class Message():
 
     def send(self):
         if self._dest == None:
-            raise Exception("No send destination was specified!")
+            print("client:", self._content)
+            return
         try:
             self._dest.sendall(self.to_bytes())
-        except:
-            print("client:", self._content)
+        except Exception as e:
+            raise Exception(e)

@@ -114,7 +114,7 @@ class Grid():
             self.state = LOSE
             if SETTINGS["play_sounds"]:
                 threading.Thread(target=playsound, args=(
-                    PATH + "game-over.mp3",)).start()
+                    PATH + "music/game-over.mp3",)).start()
 
             for list in self.contents:
                 for cell in list:

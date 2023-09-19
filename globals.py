@@ -39,8 +39,8 @@ PORT = SETTINGS["server_data"]["port"]  # The port used by the server
 MAX_MSG_LEN = 2048
 MAX_RETRIES = 3
 
-DISP_W = CELL_EDGE * SETTINGS["width"] + LRB_BORDER * 2
-DISP_H = CELL_EDGE * SETTINGS["height"] + LRB_BORDER + TOP_BORDER
+DISP_W = CELL_EDGE * SETTINGS["width"] + LRB_BORDER * 2 
+DISP_H = CELL_EDGE * (SETTINGS["height"] + 0.5) + LRB_BORDER * 2 + TOP_BORDER
 
-DISP = pygame.display.set_mode((DISP_W, DISP_H), pygame.RESIZABLE)
+DISP = pygame.display.set_mode((DISP_W, DISP_H))
 pygame.display.set_caption("Minesweeper")
