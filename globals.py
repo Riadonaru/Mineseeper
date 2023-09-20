@@ -9,6 +9,7 @@ with open(PATH[:-6] + "settings.json", "r") as stngs:
 
 BLACK = (0, 0, 0)
 BG_COLOR = (192, 192, 192)
+WHITE = (255, 255, 255)
 
 PREVIOUS = False
 CURRENT = False

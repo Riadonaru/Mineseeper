@@ -5,13 +5,12 @@ import socket
 import threading
 import time
 
-from game import Game
 from globals import HOST, MAX_MSG_LEN, MAX_RETRIES, PATH, PORT, SETTINGS
 from message import Message
 from playsound import playsound
 
 
-class Client(Game):
+class Client:
 
     def __init__(self) -> None:
         self.id: int = None
@@ -21,7 +20,6 @@ class Client(Game):
         if SETTINGS["allow_commands"]:
             self.thread = threading.Thread(target=self.listen)
             self.input_thread = threading.Thread(target=self.usr_input)
-        super().__init__()
         
         
     def set_settings(self):
@@ -55,7 +53,7 @@ class Client(Game):
             stngs.write("    " + settings[len(settings) - 1][:-1] + "\n")
             stngs.write("}")
 
-        self.reset()
+        self.running = False
 
     def usr_input(self):
         while True:

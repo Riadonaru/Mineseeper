@@ -1,22 +1,32 @@
+import json
 import threading
-from math import floor
 import time
+from math import floor
+from typing import List
 
 import pygame
+from playsound import playsound
 
 from cell import Cell
+from client import Client
+from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
+                     DISP_H, DISP_W, FONT_SIZE, GEAR, HOST, LOSE, LRB_BORDER,
+                     MINE, PATH, PAUSE_FONT_SIZE, PAUSED, PLAYING, PORT,
+                     PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
+                     TOP_BORDER, WIN)
 from grid import Grid
-from globals import (BG_COLOR, CELL_EDGE, COOL, HOST, LOSE, MINE, PAUSE_FONT_SIZE, PAUSED, PLAYING, GEAR, DISP, DISP_H, DISP_W, LRB_BORDER, PATH, PORT,
-                     RESET, SET, SETTINGS, DEAD, SHOCKED, SMILE, TOP_BORDER, WIN, BLACK, FONT_SIZE, CURRENT, PREVIOUS, SETTING)
-from sprites import SPRITES, HOURGLASS, MINESPR
+from sprites import HOURGLASS, MINESPR, SPRITES
+from textbox import Textbox
+
 pygame.init()
 
-
-class Game():
+class Game(Client):
 
     clicked_cell: Cell = None
+    setting_names: List[str] = ["Width", "Height", "Mines%", "Scale"]
 
     def __init__(self) -> None:
+        super().__init__()
         self.running = True
         self.elapsed_time = 0
         self.flagged_cells = 0
@@ -32,6 +42,9 @@ class Game():
             SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False, create_hitbox=True)
         self.settings_btn.create_hitbox()
         self.reset_btn.create_hitbox()
+        self.text_boxes = [Textbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(4)]
+        for i, name in enumerate(Game.setting_names):
+            self.text_boxes[i].populate_box(name)
         self.grid = Grid()
 
     def timer(self):
@@ -40,6 +53,35 @@ class Game():
                 self.timerEvent.wait()
                 self.elapsed_time += 1
                 time.sleep(1)
+
+    def save_settings(self):
+        """Tries to save the user altered settings
+
+        Returns:
+            int: 0 for no changes were made, 1 for changed successfully, 2 for error
+        """
+        error = False
+        changed = False
+        for box in self.text_boxes:
+            setting = box.name.lower()
+            setting_type = type(SETTINGS[setting])
+            try:
+                new_setting = setting_type(box.text)
+            except:
+                box.text = "ERR"
+                error = True
+            if new_setting != SETTINGS[setting]:
+                SETTINGS[setting] = new_setting
+                changed = True
+        
+        if error:
+            return
+        if changed:
+            super().set_settings()
+            self.running = False
+            return
+        self.timerEvent.set()
+        self.grid.state = PLAYING
 
 
     def reveal(self, x: int, y: int):
@@ -103,9 +145,9 @@ class Game():
             except:
                 pass
 
-        elif self.grid.state == PLAYING and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
             self.reset()
-        elif self.settings_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+        elif self.grid.state in (PLAYING, SET) and self.settings_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
             SETTING = True
             if self.grid.troll_mode:
                 if self.grid.contents[0][0].hidden == False:
@@ -114,14 +156,12 @@ class Game():
                     for y in range(SETTINGS["height"]):
                         for x in range(SETTINGS["width"]):
                             self.grid.contents[y][x].hidden = False
-
-        elif self.settings_btn.hitbox.collidepoint(event.pos[0], event.pos[1]) and self.grid.troll_mode:
-            if self.grid.contents[0][0].hidden == False:
-                self.grid.troll()
-            else:
-                for y in range(SETTINGS["height"]):
-                    for x in range(SETTINGS["width"]):
-                        self.grid.contents[y][x].hidden = False
+        elif self.grid.state == SET:
+            for box in self.text_boxes:
+                if box.rect.collidepoint(event.pos):
+                    box.active = True
+                else:
+                    box.active = False
 
 #-----#
   
@@ -164,6 +204,10 @@ class Game():
             text = self.pause_font.render("SETTINGS", 0, BLACK)
             DISP.blit(text, text.get_rect(
                     center=(DISP_W // 2, TOP_BORDER)))
+            for box in self.text_boxes:
+                text = box.font.render(box.name, 0, BLACK)
+                DISP.blit(text, (LRB_BORDER, box.rect.top))
+                box.draw()
         else:
             text = self.pause_font.render("PAUSED", 0, BLACK)
             DISP.blit(text, text.get_rect(
@@ -196,9 +240,15 @@ class Game():
                     self.grid.state = PAUSED
             if self.timerEvent.is_set():
                 self.timerEvent.clear()
-            elif (keys[pygame.K_ESCAPE] and self.grid.state == PAUSED) or (SETTING and self.grid.state == SET):
+            elif keys[pygame.K_ESCAPE] and self.grid.state == PAUSED:
                     self.timerEvent.set()
                     self.grid.state = PLAYING
+            elif SETTING and self.grid.state == SET:
+                self.save_settings()
+                    # case 0:
+                    # case 1:
+                    #     super.set_settings()
+                    #     self.running = False
     
         SETTING = False
 
@@ -238,6 +288,10 @@ class Game():
                 case pygame.MOUSEMOTION:
                     if self.timerEvent.is_set():
                         self.highlight_cell(event)
+                case pygame.KEYDOWN:
+                    if self.grid.state == SET:
+                        for box in self.text_boxes:
+                            box.text_handler(event.key, event.unicode)
                 case pygame.QUIT:
                     self.running = False
 

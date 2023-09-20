@@ -1,8 +1,8 @@
 {
     "easy_start": true,
     "width": 20,
-    "height": 15,
-    "mines": 15,
+    "height": 20,
+    "mines%": 1,
     "play_sounds": false,
     "allow_commands": true,
     "server_data": {

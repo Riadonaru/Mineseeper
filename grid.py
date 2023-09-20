@@ -17,7 +17,7 @@ class Grid():
         self.troll_mode: bool = False
         self.contents_created: bool = False
         self.tiles = SETTINGS["width"] * SETTINGS["height"]
-        self.mines = int(self.tiles * SETTINGS["mines"] / 100)
+        self.mines = int(self.tiles * SETTINGS["mines%"] / 100)
         self.contents: np.ndarray = np.array([Cell(x, y, create_hitbox=True) for x in range(
             SETTINGS["width"]) for y in range(SETTINGS["height"])])
         self.contents = np.reshape(
