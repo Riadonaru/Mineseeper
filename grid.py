@@ -13,7 +13,7 @@ class Grid():
     clicked_cell: Cell = None
 
     def __init__(self) -> None:
-        self.state: int = PLAYING  # 1 for playing, 14 for win, 15 for lose.
+        self.state: int = PLAYING  # 1 for playing, 2 for paused, 3 for settings, 14 for win, 15 for lose.
         self.troll_mode: bool = False
         self.contents_created: bool = False
         self.tiles = SETTINGS["width"] * SETTINGS["height"]

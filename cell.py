@@ -12,6 +12,7 @@ class Cell():
         self.__content: int = value
         self.x: int = x
         self.y: int = y
+        self.action = None
         if create_hitbox:
             self.create_hitbox()
 
@@ -64,3 +65,6 @@ class Cell():
             DISP.blit(SPRITES[FLAG if self.flagged else CELL], self.hitbox)
         else:
             DISP.blit(SPRITES[self.value], self.hitbox)
+
+    def add_action(self, method: callable):
+        self.action = method

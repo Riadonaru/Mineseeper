@@ -10,6 +10,10 @@ with open(PATH[:-6] + "settings.json", "r") as stngs:
 BLACK = (0, 0, 0)
 BG_COLOR = (192, 192, 192)
 
+PREVIOUS = False
+CURRENT = False
+SETTING: bool = False
+
 CELL: int = -5
 FLAG: int = -4
 CLICKED_MINE: int = -3
@@ -21,6 +25,8 @@ COOL: int = 11
 DEAD: int = 12
 
 PLAYING: int = 1
+PAUSED: int = 2
+SET: int = 3
 WIN: int = 14
 LOSE: int = 15
 
