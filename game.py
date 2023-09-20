@@ -189,15 +189,16 @@ class Game():
             CURRENT = False
 
         if CURRENT and not PREVIOUS:
-            if SETTING:
-                self.grid.state = SET
-            else:
-                self.grid.state = PAUSED
+            if self.grid.state == PLAYING:
+                if SETTING:
+                    self.grid.state = SET
+                else:
+                    self.grid.state = PAUSED
             if self.timerEvent.is_set():
                 self.timerEvent.clear()
-            else:
-                self.timerEvent.set()
-                self.grid.state = PLAYING
+            elif (keys[pygame.K_ESCAPE] and self.grid.state == PAUSED) or (SETTING and self.grid.state == SET):
+                    self.timerEvent.set()
+                    self.grid.state = PLAYING
     
         SETTING = False
 
@@ -277,7 +278,6 @@ class Game():
         global RESET
 
         while self.running:
-            print(self.grid.state)
             self.event_handler()
             self.draw_panel()
             self.draw_main()
