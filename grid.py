@@ -34,6 +34,7 @@ class Grid():
 
         self.contents_created = True
 
+        
     def create_layout(self, x: int = None, y: int = None) -> None:
         """Creates the grid layout for the game and stores it in self.contents
 
@@ -55,14 +56,17 @@ class Grid():
             self.contents: List[List[Cell]] = list(self.contents.reshape(
                 SETTINGS["height"], SETTINGS["width"]))
 
-            if SETTINGS["easy_start"] and self.contents[y][x].value == MINE:
-                x_new, y_new = self.find_clear_spot()
-                if x_new == -1 and y_new == -1:
-                    self.troll_mode = True
-                    self.troll()
-                    return
-                self.contents[y_new][x_new].value = -1
-                self.contents[y][x].value = 0
+            if SETTINGS["easy_start"]:
+                for dy in range(-1, 2):
+                    for dx in range(-1, 2):
+                        if self.contents[y + dy][x + dx].value == MINE:
+                            x_new, y_new = self.find_clear_spot()
+                            if x_new == -1 and y_new == -1:
+                                self.troll_mode = True
+                                self.troll()
+                                return
+                            self.contents[y_new][x_new].value = -1
+                            self.contents[y+ dy][x + dx].value = 0
 
             for y in range(SETTINGS["height"]):
                 for x in range(SETTINGS["width"]):

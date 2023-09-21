@@ -1,4 +1,5 @@
 import json
+import sys
 import threading
 import time
 from math import floor
@@ -145,23 +146,28 @@ class Game(Client):
             except:
                 pass
 
-        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
-            self.reset()
         elif self.grid.state in (PLAYING, SET) and self.settings_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
-            SETTING = True
             if self.grid.troll_mode:
-                if self.grid.contents[0][0].hidden == False:
-                    self.grid.troll()
-                else:
-                    for y in range(SETTINGS["height"]):
-                        for x in range(SETTINGS["width"]):
-                            self.grid.contents[y][x].hidden = False
+                self.grid.troll()
+                for y in range(SETTINGS["height"]):
+                    for x in range(SETTINGS["width"]):
+                        self.grid.contents[y][x].hidden = False
+            else:
+                SETTING = True
+
         elif self.grid.state == SET:
             for box in self.text_boxes:
                 if box.rect.collidepoint(event.pos):
                     box.active = True
                 else:
                     box.active = False
+        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+            if self.grid.troll_mode:
+                SETTINGS["mines%"] = 15
+                super().set_settings()
+                sys.exit() # TODO
+            else:
+                self.reset()
 
 #-----#
   
@@ -245,10 +251,6 @@ class Game(Client):
                     self.grid.state = PLAYING
             elif SETTING and self.grid.state == SET:
                 self.save_settings()
-                    # case 0:
-                    # case 1:
-                    #     super.set_settings()
-                    #     self.running = False
     
         SETTING = False
 

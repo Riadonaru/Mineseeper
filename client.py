@@ -53,8 +53,6 @@ class Client:
             stngs.write("    " + settings[len(settings) - 1][:-1] + "\n")
             stngs.write("}")
 
-        self.running = False
-
     def usr_input(self):
         while True:
             inp = Message(input(), self.id)

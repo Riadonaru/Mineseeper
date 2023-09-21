@@ -22,11 +22,12 @@ class Textbox():
     def text_handler(self, key: int, unicode):
         if self.active:
             if key == pygame.K_BACKSPACE and len(self.text) > 0:
-                self.text = self.text[:-1]
+                self.text = ""
             elif key != pygame.K_BACKSPACE and self.max_chars >= len(self.text):
                 self.text += unicode
             else:
-                playsound(PATH + "music/error.mp3", False)
+                if SETTINGS["playsound"]:
+                    playsound(PATH + "music/error.mp3", False)
 
     def populate_box(self, name: str):
         self.name = name

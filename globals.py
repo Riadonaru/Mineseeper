@@ -49,5 +49,5 @@ MAX_RETRIES = 3
 DISP_W = CELL_EDGE * SETTINGS["width"] + LRB_BORDER * 2
 DISP_H = CELL_EDGE * SETTINGS["height"] + LRB_BORDER + TOP_BORDER
 
-DISP = pygame.display.set_mode((DISP_W, DISP_H), pygame.RESIZABLE)
+DISP = pygame.display.set_mode((DISP_W, DISP_H))
 pygame.display.set_caption("Minesweeper")

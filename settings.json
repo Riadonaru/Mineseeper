@@ -2,7 +2,7 @@
     "easy_start": true,
     "width": 20,
     "height": 20,
-    "mines%": 1,
+    "mines%": 15,
     "play_sounds": false,
     "allow_commands": true,
     "server_data": {
@@ -10,5 +10,5 @@
         "port": 65432
     },
     "connect": false,
-    "scale": 1
+    "scale": 1.1
 }
