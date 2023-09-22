@@ -14,9 +14,9 @@ from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
                      DISP_H, DISP_W, FONT_SIZE, GEAR, HOST, LOSE, LRB_BORDER,
                      MINE, PATH, PAUSE_FONT_SIZE, PAUSED, PLAYING, PORT,
                      PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
-                     TOP_BORDER, WIN)
+                     TOP_BORDER, WIN, HOURGLASS)
 from grid import Grid
-from sprites import HOURGLASS, MINESPR, SPRITES
+from sprites import SPRITES
 from textbox import Textbox
 
 pygame.init()
@@ -193,8 +193,10 @@ class Game(Client):
             str(self.grid.mines - self.flagged_cells), 0, BLACK)
         time_elapsed = self.font.render(str(self.elapsed_time), 0, BLACK)
         DISP.fill(BG_COLOR)
-        DISP.blits([(MINESPR, (LRB_BORDER, LRB_BORDER)), (mines_left, (LRB_BORDER + 15, LRB_BORDER + 5)), (HOURGLASS, (LRB_BORDER,
-                    LRB_BORDER * 2)), (time_elapsed, (LRB_BORDER + 15, LRB_BORDER * 2 + 5))])
+        DISP.blits([(SPRITES[MINE], (LRB_BORDER, LRB_BORDER)),
+                     (mines_left, mines_left.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
+                      (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
+                       (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
 
         self.settings_btn.draw()
         self.reset_btn.draw()
@@ -209,7 +211,7 @@ class Game(Client):
         elif self.grid.state == SET:
             text = self.pause_font.render("SETTINGS", 0, BLACK)
             DISP.blit(text, text.get_rect(
-                    center=(DISP_W // 2, TOP_BORDER)))
+                    center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
             for box in self.text_boxes:
                 text = box.font.render(box.name, 0, BLACK)
                 DISP.blit(text, (LRB_BORDER, box.rect.top))

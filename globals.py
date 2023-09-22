@@ -8,6 +8,7 @@ with open(PATH[:-6] + "settings.json", "r") as stngs:
     SETTINGS: Dict[str, any] = json.loads(stngs.read())
 
 BLACK = (0, 0, 0)
+BLUE = (173, 216, 230)
 BG_COLOR = (192, 192, 192)
 WHITE = (255, 255, 255)
 
@@ -28,17 +29,19 @@ DEAD: int = 12
 PLAYING: int = 1
 PAUSED: int = 2
 SET: int = 3
-WIN: int = 14
-LOSE: int = 15
+WIN: int = 15
+LOSE: int = 16
 
 GEAR: int = 13
 RESET: int = SMILE
+
+HOURGLASS: int = 14
 
 CELL_EDGE: int = 34 * SETTINGS["scale"]
 TOP_BORDER: int = 100 * SETTINGS["scale"]
 LRB_BORDER: int = 16 * SETTINGS["scale"]
 
-FONT_SIZE = int(12 * SETTINGS["scale"])
+FONT_SIZE = int(16 * SETTINGS["scale"])
 PAUSE_FONT_SIZE = int(40 * SETTINGS["scale"])
 
 HOST = SETTINGS["server_data"]["host"]  # The server's hostname or IP address

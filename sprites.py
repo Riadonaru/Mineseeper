@@ -1,5 +1,5 @@
 import pygame
-from globals import BG_COLOR, FONT_SIZE, SETTINGS, PATH, WIN, LOSE
+from globals import BG_COLOR, SETTINGS, PATH, WIN, LOSE
 
 class Spritesheet(object):
 
@@ -17,11 +17,11 @@ class Spritesheet(object):
 
     def load_sprites(self):
 
-        sprites = [self.get_image(x * 34 + 1, 1, 34, 34, SETTINGS["scale"]) for x in range(19)]
+        sprites = [self.get_image(x * 34 + 1, 1, 34, 34, SETTINGS["scale"]) for x in range(20)]
         sprites.insert(WIN, self.get_image(1, 35, 300, 222))
         sprites.insert(LOSE, self.get_image(301, 35, 300, 222))
         return sprites
 
 SPRITES = Spritesheet(PATH + "spritesheet.png").load_sprites()
-HOURGLASS = pygame.transform.scale(pygame.image.load(PATH + "hourglass.png"), (FONT_SIZE + 4, FONT_SIZE + 4))
-MINESPR = pygame.transform.scale(SPRITES[-1], (FONT_SIZE + 4, FONT_SIZE + 4))
+# HOURGLASS = pygame.transform.scale(pygame.image.load(PATH + "hourglass.png"), (FONT_SIZE + 4, FONT_SIZE + 4))
+# MINESPR = pygame.transform.scale(SPRITES[-1], (FONT_SIZE + 4, FONT_SIZE + 4))
