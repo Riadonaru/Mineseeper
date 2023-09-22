@@ -8,7 +8,7 @@ SOUNDS = PATH + "sounds/"
 FONTS = PATH + "fonts/"
 IMAGES = PATH + "images/"
 
-with open(PATH[:-6] + "settings.json", "r") as stngs:
+with open(PATH + "settings.json", "r") as stngs:
     SETTINGS: Dict[str, any] = json.loads(stngs.read())
 
 BLACK = (0, 0, 0)
@@ -57,4 +57,5 @@ DISP_W = CELL_EDGE * SETTINGS["width"] + LRB_BORDER * 2
 DISP_H = CELL_EDGE * SETTINGS["height"] + LRB_BORDER + TOP_BORDER
 
 DISP = pygame.display.set_mode((DISP_W, DISP_H))
+pygame.display.set_icon(pygame.image.load(IMAGES + "icon.png"))
 pygame.display.set_caption("Minesweeper")
