@@ -1,8 +1,12 @@
 import json
 from typing import Dict
+
 import pygame
 
-PATH = __file__[:-10] + "files/"
+PATH = __file__[:-10]
+SOUNDS = PATH + "sounds/"
+FONTS = PATH + "fonts/"
+IMAGES = PATH + "images/"
 
 with open(PATH[:-6] + "settings.json", "r") as stngs:
     SETTINGS: Dict[str, any] = json.loads(stngs.read())

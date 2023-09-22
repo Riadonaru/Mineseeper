@@ -1,5 +1,6 @@
 from game import Game
 
+
 def main():
     GAME = Game()
     GAME.run()

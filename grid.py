@@ -3,9 +3,10 @@ import threading
 from typing import List
 
 import numpy as np
-from cell import Cell
-from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PATH, PLAYING, SETTINGS
 from playsound import playsound
+
+from cell import Cell
+from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PLAYING, SETTINGS, SOUNDS
 
 
 class Grid():
@@ -118,7 +119,7 @@ class Grid():
             self.state = LOSE
             if SETTINGS["play_sounds"]:
                 threading.Thread(target=playsound, args=(
-                    PATH + "game-over.mp3",)).start()
+                    SOUNDS + "game-over.mp3",)).start()
 
             for list in self.contents:
                 for cell in list:

@@ -1,4 +1,3 @@
-import json
 import sys
 import threading
 import time
@@ -6,16 +5,15 @@ from math import floor
 from typing import List
 
 import pygame
-from playsound import playsound
 
 from cell import Cell
 from checkbox import Checkbox
 from client import Client
 from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
-                     DISP_H, DISP_W, FONT_SIZE, GEAR, HOST, LOSE, LRB_BORDER,
-                     MINE, PATH, PAUSE_FONT_SIZE, PAUSED, PLAYING, PORT,
-                     PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
-                     TOP_BORDER, WIN, HOURGLASS)
+                     DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOST, HOURGLASS,
+                     LOSE, LRB_BORDER, MINE, PATH, PAUSE_FONT_SIZE, PAUSED,
+                     PLAYING, PORT, PREVIOUS, RESET, SET, SETTING, SETTINGS,
+                     SHOCKED, SMILE, TOP_BORDER, WIN)
 from grid import Grid
 from sprites import SPRITES
 from textbox import Textbox
@@ -36,9 +34,9 @@ class Game(Client):
         self.timerEvent = threading.Event()
         self.timer_thread = threading.Thread(target=self.timer)
         self.font = pygame.font.Font(
-            PATH + "Font.ttf", FONT_SIZE)
+            FONTS + "Font.ttf", FONT_SIZE)
         self.pause_font = pygame.font.Font(
-            PATH + "Font.ttf", PAUSE_FONT_SIZE)
+            FONTS + "Font.ttf", PAUSE_FONT_SIZE)
         self.settings_btn = Cell(
             SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False, create_hitbox=True)
         self.reset_btn = Cell(

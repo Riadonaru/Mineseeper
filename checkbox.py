@@ -1,13 +1,14 @@
 import pygame
 
-from globals import CELL_EDGE, DISP, BLACK, LRB_BORDER, PATH, SETTINGS, WHITE
+from globals import BLACK, CELL_EDGE, DISP, FONTS, LRB_BORDER, SETTINGS, WHITE
+
 pygame.font.init()
 
 class Checkbox(pygame.Rect):
      
     def __init__(self, top, left=LRB_BORDER):
         super().__init__(left, top, 12 * SETTINGS["scale"], 12 * SETTINGS["scale"])
-        self.font = pygame.font.Font(PATH + "Font.ttf", int(CELL_EDGE / 2))
+        self.font = pygame.font.Font(FONTS + "Font.ttf", int(CELL_EDGE / 2))
         self.active = False
         self.name = None
 

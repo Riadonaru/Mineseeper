@@ -5,9 +5,11 @@ import socket
 import threading
 import time
 
-from globals import HOST, MAX_MSG_LEN, MAX_RETRIES, PATH, PORT, SETTINGS
-from message import Message
 from playsound import playsound
+
+from globals import (HOST, MAX_MSG_LEN, MAX_RETRIES, PATH, PORT, SETTINGS,
+                     SOUNDS)
+from message import Message
 
 
 class Client:
@@ -26,7 +28,7 @@ class Client:
         """This method writes the current settings configuration into settings.json in a readable format.
         """
 
-        with open(PATH[:-6] + "settings.json", "w") as stngs:
+        with open(PATH + "settings.json", "w") as stngs:
             settings: list[str] = json.dumps(SETTINGS).split(", ")
             stngs.write("{\n")
             stngs.write("    " + settings[0][1:] + ",\n")
@@ -70,7 +72,7 @@ class Client:
                 res = "Hello from client %i" % self.id
 
             case "sound":
-                playsound(PATH + "game-over.mp3")
+                playsound(SOUNDS + "game-over.mp3")
 
             case "get":
                 res = ""

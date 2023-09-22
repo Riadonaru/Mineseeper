@@ -1,8 +1,8 @@
-import re
-from typing import Tuple
 import pygame
-from globals import DISP, PATH, LRB_BORDER, CELL_EDGE, BLUE, WHITE, BG_COLOR, SETTINGS
 from playsound import playsound
+
+from globals import (BG_COLOR, BLUE, CELL_EDGE, DISP, FONTS, LRB_BORDER,
+                     SETTINGS, SOUNDS, WHITE)
 
 
 class Textbox(pygame.Rect):
@@ -13,7 +13,7 @@ class Textbox(pygame.Rect):
 
     def __init__(self, top, left = box_left, width = box_width, height = box_height) -> None:
         super().__init__(left, top, width, height)
-        self.font = pygame.font.Font(PATH + "Font.ttf", int(CELL_EDGE / 2))
+        self.font = pygame.font.Font(FONTS + "Font.ttf", int(CELL_EDGE / 2))
         self.text = ""
         self.name = None
         self.active = False
@@ -28,7 +28,7 @@ class Textbox(pygame.Rect):
                 self.text += unicode
             else:
                 if SETTINGS["play_sounds"]:
-                    playsound(PATH + "music/error.mp3", False)
+                    playsound(SOUNDS + "error.mp3", False)
 
     def populate_box(self, name: str):
         self.name = name
