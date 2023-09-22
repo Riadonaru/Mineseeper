@@ -9,6 +9,7 @@ import pygame
 from playsound import playsound
 
 from cell import Cell
+from checkbox import Checkbox
 from client import Client
 from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
                      DISP_H, DISP_W, FONT_SIZE, GEAR, HOST, LOSE, LRB_BORDER,
@@ -21,10 +22,11 @@ from textbox import Textbox
 
 pygame.init()
 
+
 class Game(Client):
 
     clicked_cell: Cell = None
-    setting_names: List[str] = ["Width", "Height", "Mines%", "Scale"]
+    setting_names: List[str] = ["Width", "Height", "Mines%", "Scale", "Easy_Start", "Play_Sounds" ,"Allow_Commands"]
 
     def __init__(self) -> None:
         super().__init__()
@@ -43,9 +45,10 @@ class Game(Client):
             SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False, create_hitbox=True)
         self.settings_btn.create_hitbox()
         self.reset_btn.create_hitbox()
-        self.text_boxes = [Textbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(4)]
+        self.boxes = [Textbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) if i <
+                           4 else Checkbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(7)]
         for i, name in enumerate(Game.setting_names):
-            self.text_boxes[i].populate_box(name)
+            self.boxes[i].populate_box(name)
         self.grid = Grid()
 
     def timer(self):
@@ -57,24 +60,25 @@ class Game(Client):
 
     def save_settings(self):
         """Tries to save the user altered settings
-
-        Returns:
-            int: 0 for no changes were made, 1 for changed successfully, 2 for error
         """
         error = False
         changed = False
-        for box in self.text_boxes:
-            setting = box.name.lower()
-            setting_type = type(SETTINGS[setting])
-            try:
-                new_setting = setting_type(box.text)
-            except:
-                box.text = "ERR"
-                error = True
-            if new_setting != SETTINGS[setting]:
-                SETTINGS[setting] = new_setting
+        for box in self.boxes:
+            setting = box.name.lower().replace(" ", "_")
+            if type(box) == Textbox:
+                setting_type = type(SETTINGS[setting])
+                try:
+                    new_setting = setting_type(box.text)
+                except:
+                    box.text = "ERR"
+                    error = True
+                if new_setting != SETTINGS[setting]:
+                    SETTINGS[setting] = new_setting
+                    changed = True
+            elif not box.active == SETTINGS[setting]:
+                SETTINGS[setting] = box.active
                 changed = True
-        
+
         if error:
             return
         if changed:
@@ -83,7 +87,6 @@ class Game(Client):
             return
         self.timerEvent.set()
         self.grid.state = PLAYING
-
 
     def reveal(self, x: int, y: int):
         """This method reveals the cell at the given coordinates if possible.
@@ -156,21 +159,26 @@ class Game(Client):
                 SETTING = True
 
         elif self.grid.state == SET:
-            for box in self.text_boxes:
-                if box.rect.collidepoint(event.pos):
-                    box.active = True
-                else:
-                    box.active = False
+            for box in self.boxes:
+                if type(box) == Textbox:
+                    if box.collidepoint(event.pos):
+                        box.active = True
+                        box.text = ""
+                    else:
+                        box.active = False
+                elif box.collidepoint(event.pos):
+                    box.active = not box.active
+
         elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
             if self.grid.troll_mode:
                 SETTINGS["mines%"] = 15
                 super().set_settings()
-                sys.exit() # TODO
+                sys.exit()  # TODO
             else:
                 self.reset()
 
 #-----#
-  
+
     def highlight_cell(self, event: pygame.event.Event):
         """Reacts to cursor movement
 
@@ -194,9 +202,10 @@ class Game(Client):
         time_elapsed = self.font.render(str(self.elapsed_time), 0, BLACK)
         DISP.fill(BG_COLOR)
         DISP.blits([(SPRITES[MINE], (LRB_BORDER, LRB_BORDER)),
-                     (mines_left, mines_left.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
-                      (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
-                       (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
+                    (mines_left, mines_left.get_rect(
+                        center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
+                    (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
+                    (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
 
         self.settings_btn.draw()
         self.reset_btn.draw()
@@ -211,11 +220,15 @@ class Game(Client):
         elif self.grid.state == SET:
             text = self.pause_font.render("SETTINGS", 0, BLACK)
             DISP.blit(text, text.get_rect(
-                    center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
-            for box in self.text_boxes:
-                text = box.font.render(box.name, 0, BLACK)
-                DISP.blit(text, (LRB_BORDER, box.rect.top))
+                center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
+            for box in self.boxes:
+                text = box.font.render(box.name.replace("_", " "), 0, BLACK)
                 box.draw()
+                if type(box) == Textbox:
+                    DISP.blit(text, (LRB_BORDER, box.top))
+                else:
+                    DISP.blit(text, (LRB_BORDER + box.left * 1.5, box.top))
+
         else:
             text = self.pause_font.render("PAUSED", 0, BLACK)
             DISP.blit(text, text.get_rect(
@@ -249,18 +262,19 @@ class Game(Client):
             if self.timerEvent.is_set():
                 self.timerEvent.clear()
             elif keys[pygame.K_ESCAPE] and self.grid.state == PAUSED:
-                    self.timerEvent.set()
-                    self.grid.state = PLAYING
+                self.timerEvent.set()
+                self.grid.state = PLAYING
             elif SETTING and self.grid.state == SET:
                 self.save_settings()
-    
+
         SETTING = False
 
 
 #-----#
 
+
     def endgame_handler(self):
-        
+
         global RESET
 
         b = False
@@ -294,8 +308,9 @@ class Game(Client):
                         self.highlight_cell(event)
                 case pygame.KEYDOWN:
                     if self.grid.state == SET:
-                        for box in self.text_boxes:
-                            box.text_handler(event.key, event.unicode)
+                        for box in self.boxes:
+                            if type(box) == Textbox:
+                                box.text_handler(event.key, event.unicode)
                 case pygame.QUIT:
                     self.running = False
 
@@ -317,7 +332,8 @@ class Game(Client):
 
 
 # ----------------------- #
-  
+
+
     def run(self):
         """Starts the game threads & game loop
         """
@@ -329,7 +345,7 @@ class Game(Client):
         self.play()
 
 # ----------------------- #
-    
+
     def play(self):
         """This function has the main game loop and occupies the drawThread of the game.
         """
