@@ -10,10 +10,10 @@ from cell import Cell
 from checkbox import Checkbox
 from client import Client
 from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
-                     DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOST, HOURGLASS,
-                     LOSE, LRB_BORDER, MINE, PATH, PAUSE_FONT_SIZE, PAUSED,
-                     PLAYING, PORT, PREVIOUS, RESET, SET, SETTING, SETTINGS,
-                     SHOCKED, SMILE, TOP_BORDER, WIN)
+                     DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOURGLASS, LOSE,
+                     LRB_BORDER, MINE, PAUSE_FONT_SIZE, PAUSED, PLAYING,
+                     PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
+                     TOP_BORDER, WIN)
 from grid import Grid
 from sprites import SPRITES
 from textbox import Textbox
@@ -204,7 +204,7 @@ class Game(Client):
                         center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
                     (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
                     (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
-
+        
         self.settings_btn.draw()
         self.reset_btn.draw()
 
