@@ -23,8 +23,8 @@ pygame.init()
 
 class Game(Client):
 
-    clicked_cell: Cell = None
-    setting_names: List[str] = ["Width", "Height", "Mines%", "Scale", "Easy_Start", "Play_Sounds" ,"Allow_Commands"]
+    setting_names: List[str] = ["Width", "Height", "Mines%",
+                                "Scale", "Easy_Start", "Play_Sounds", "Allow_Commands"]
 
     def __init__(self) -> None:
         super().__init__()
@@ -38,20 +38,18 @@ class Game(Client):
         self.pause_font = pygame.font.Font(
             FONTS + "Font.ttf", PAUSE_FONT_SIZE)
         self.settings_btn = Cell(
-            SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False, create_hitbox=True)
+            SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False)
         self.reset_btn = Cell(
-            SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False, create_hitbox=True)
-        self.settings_btn.create_hitbox()
-        self.reset_btn.create_hitbox()
+            SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False)
         self.boxes = [Textbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) if i <
-                           4 else Checkbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(7)]
+                      4 else Checkbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(7)]
         for i, name in enumerate(Game.setting_names):
             self.boxes[i].populate_box(name)
         self.grid = Grid()
 
     def timer(self):
         while self.running:
-            while self.grid.contents_created and self.grid.state == PLAYING:
+            while self.grid.clicked_cell != None and self.grid.state == PLAYING:
                 self.timerEvent.wait()
                 self.elapsed_time += 1
                 time.sleep(1)
@@ -93,8 +91,8 @@ class Game(Client):
             x (int): The x coordinate of the cell.
             y (int): The y coordinate of the cell.
         """
-        if not self.grid.contents_created:
-            self.grid.create_layout(x, y)
+        if self.grid.clicked_cell == None and SETTINGS["easy_start"]:
+            self.grid.easy_start(x, y)
 
         self.grid.clicked_cell = self.grid.contents[y][x]
         mine_loc = self.grid.reveal_next(x, y)
@@ -113,12 +111,16 @@ class Game(Client):
             if self.grid.contents[y][x].flagged:
                 self.grid.contents[y][x].flagged = False
                 self.flagged_cells -= 1
+                self.grid.remove_flags(x, y)
             else:
                 self.grid.contents[y][x].flagged = True
                 self.flagged_cells += 1
+                self.grid.add_flags(x, y)
 
         if self.flagged_cells == self.grid.mines:
             self.endgame_handler()
+
+
 
 # ----------------------Event-Handlers---------------------- #
  # Cursor Events:
@@ -147,7 +149,7 @@ class Game(Client):
             except:
                 pass
 
-        elif self.grid.state in (PLAYING, SET) and self.settings_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+        elif self.grid.state in (PLAYING, SET) and self.settings_btn.collidepoint(event.pos[0], event.pos[1]):
             if self.grid.troll_mode:
                 self.grid.troll()
                 for y in range(SETTINGS["height"]):
@@ -167,7 +169,7 @@ class Game(Client):
                 elif box.collidepoint(event.pos):
                     box.active = not box.active
 
-        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
             if self.grid.troll_mode:
                 SETTINGS["mines%"] = 15
                 super().set_settings()
@@ -184,7 +186,7 @@ class Game(Client):
             game (Minesweeper.Game): The game to react in.
             event (pygame.event.Event): The event associated with the left click.
         """
-        if self.reset_btn.hitbox.collidepoint(event.pos[0], event.pos[1]):
+        if self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
             self.reset_btn.value = SHOCKED
         elif self.grid.state == LOSE:
             self.reset_btn.value = DEAD
@@ -204,7 +206,7 @@ class Game(Client):
                         center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
                     (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
                     (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
-        
+
         self.settings_btn.draw()
         self.reset_btn.draw()
 
@@ -270,7 +272,6 @@ class Game(Client):
 
 #-----#
 
-
     def endgame_handler(self):
 
         global RESET
@@ -324,13 +325,12 @@ class Game(Client):
         RESET = SMILE
         self.elapsed_time = 0
         self.flagged_cells = 0
-        self.grid.contents_created = False
+        self.grid.clicked_cell = None
         self.grid.troll_mode = False
         self.grid = Grid()
 
 
 # ----------------------- #
-
 
     def run(self):
         """Starts the game threads & game loop

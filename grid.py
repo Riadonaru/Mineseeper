@@ -1,6 +1,5 @@
 import random
 import threading
-from typing import List
 
 import numpy as np
 from playsound import playsound
@@ -11,72 +10,55 @@ from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PLAYING, SETTINGS, SOUNDS
 
 class Grid():
 
-    clicked_cell: Cell = None
 
     def __init__(self) -> None:
+        self.clicked_cell: Cell = None
         self.state: int = PLAYING  # 1 for playing, 2 for paused, 3 for settings, 15 for win, 16 for lose.
         self.troll_mode: bool = False
-        self.contents_created: bool = False
         self.tiles = SETTINGS["width"] * SETTINGS["height"]
         self.mines = int(self.tiles * SETTINGS["mines%"] / 100)
-        self.contents: np.ndarray = np.array([Cell(x, y, create_hitbox=True) for x in range(
-            SETTINGS["width"]) for y in range(SETTINGS["height"])])
-        self.contents = np.reshape(
-            self.contents, (SETTINGS["height"], SETTINGS["width"]), 'F')
+        
+        # Creating index values for mines
+        self.temp = [-1 if i < self.mines else 0 for i in range(self.tiles)]
+        random.shuffle(self.temp)
+        self.temp = np.reshape(self.temp, (SETTINGS["height"], SETTINGS["width"]), 'F')
+
+        # Populating the array with mines
+        self.contents = np.ndarray((SETTINGS["height"], SETTINGS["width"])).astype(Cell)
+        for x in range(SETTINGS["width"]):
+            for y in range(SETTINGS["height"]):
+                self.contents[y][x] = Cell(x, y, self.temp[y][x])
+
+        if not SETTINGS["easy_start"]:
+            self.init_cells()
+
 
     def troll(self):
         for y in range(SETTINGS["height"]):
             for x in range(SETTINGS["width"]):
-                value = random.randint(0, 20)
-                self.contents[y][x].value = value
-                self.contents[y][x].x = x
-                self.contents[y][x].y = y
-                self.contents[y][x].create_hitbox()
+                self.contents[y][x].value = random.randint(0, 20)
 
-        self.contents_created = True
+    def init_cells(self):
+        for y in range(SETTINGS["height"]):
+            for x in range(SETTINGS["width"]):
+                self.assign_value(x, y)
 
-        
-    def create_layout(self, x: int = None, y: int = None) -> None:
-        """Creates the grid layout for the game and stores it in self.contents
 
-        Args:
-            x (int, optional): The x location for a safe start. Defaults to None.
-            y (int, optional): The y location for a safe start. Defaults to None.
-        """
-        if not self.contents[y][x].flagged:
+    def easy_start(self, clicked_x: int, clicked_y: int):
+        if not self.contents[clicked_y][clicked_x].flagged:
+            for dy in range(-1, 2):
+                for dx in range(-1, 2):
+                    if self.contents[clicked_y + dy][clicked_x + dx].value == MINE:
+                        x_new, y_new = self.find_clear_spot()
+                        if x_new == -1 and y_new == -1:
+                            self.troll_mode = True
+                            self.troll()
+                            return
+                        self.contents[y_new][x_new].value = -1
+                        self.contents[clicked_y+ dy][clicked_x + dx].value = 0
 
-            self.contents = np.array([Cell for _ in range(self.tiles)])
+        self.init_cells()
 
-            for i in range(self.tiles):
-                if i < self.mines:
-                    self.contents[i] = Cell(value=-1)
-                else:
-                    self.contents[i] = Cell()
-
-            np.random.shuffle(self.contents)
-            self.contents: List[List[Cell]] = list(self.contents.reshape(
-                SETTINGS["height"], SETTINGS["width"]))
-
-            if SETTINGS["easy_start"]:
-                for dy in range(-1, 2):
-                    for dx in range(-1, 2):
-                        if self.contents[y + dy][x + dx].value == MINE:
-                            x_new, y_new = self.find_clear_spot()
-                            if x_new == -1 and y_new == -1:
-                                self.troll_mode = True
-                                self.troll()
-                                return
-                            self.contents[y_new][x_new].value = -1
-                            self.contents[y+ dy][x + dx].value = 0
-
-            for y in range(SETTINGS["height"]):
-                for x in range(SETTINGS["width"]):
-                    self.contents[y][x].x = x
-                    self.contents[y][x].y = y
-                    self.contents[y][x].create_hitbox()
-                    self.contents[y][x].value = self.assign_value(x, y)
-
-            self.contents_created = True
 
     def find_clear_spot(self):
         for y in range(SETTINGS["height"]):
@@ -87,89 +69,68 @@ class Grid():
         return -1, -1
 
     def assign_value(self, x_index: int, y_index: int) -> int:
-        """Returns the number of adjacent mines to the cell at the given index.
+        """Initiates cell value and semi saturation.
 
         Args:
             x_index (int): The x index of the cell.
             y_index (int): The y index of the cell.
-
-        Returns:
-            int: The number of mines adjacent to the cell.
         """
-        if self.contents[y_index][x_index].value != -1:
-            num_of_adj_mines = 0
-            # print("\nNew\n")
-            for y in range(-1, 2):
-                for x in range(-1, 2):
-                    if 0 <= x_index + x < SETTINGS["width"] and 0 <= y_index + y < SETTINGS["height"]:
-                        if self.contents[y_index + y][x_index + x].value == -1:
-                            # print("Mine at:", x_index + x, y_index + y)
-                            num_of_adj_mines += 1
+        cell: Cell = self.contents[y_index][x_index]
+        if cell.value != MINE:
+            for dy in range(-1, 2):
+                for dx in range(-1, 2):
+                    if 0 <= x_index + dx < SETTINGS["width"] and 0 <= y_index + dy < SETTINGS["height"]:
+                        adj_cell: Cell = self.contents[y_index + dy][x_index + dx]
+                        if adj_cell.value == MINE:
+                            cell.value += 1
 
-            return num_of_adj_mines
-        else:
-            return -1
 
-    def reveal_next(self, x: int, y: int):
-        """This method has the reveal algo.
+    def reveal_next(self, x: int, y: int, first: bool = True): 
+        """This method has the reveal algo. 
         """
-        cell = self.contents[y][x]
-        if cell.value == MINE and not cell.flagged:
-            cell.value = CLICKED_MINE
-            self.state = LOSE
-            if SETTINGS["play_sounds"]:
-                threading.Thread(target=playsound, args=(
-                    SOUNDS + "game-over.mp3",)).start()
+        cell: Cell = self.contents[y][x]
+        if not cell.flagged:
+            if cell.value == MINE:
+                return self.reveal_all(cell)
+            elif first or (cell.hidden and not cell.flagged and cell.saturated()):
+                cell.hidden = False
+                for dy in range(-1, 2):
+                    for dx in range(-1, 2):
+                        if 0 <= x + dx < SETTINGS["width"] and 0 <= y + dy < SETTINGS["height"]:
+                            self.reveal_next(x + dx, y + dy, first=False)
+                            self.contents[y + dy][x + dx].hidden = False
+            
 
-            for list in self.contents:
-                for cell in list:
-                    if not cell.flagged:
-                        cell.hidden = False
-                    elif cell.value != MINE:
-                        cell.value = NOMINE
-                        cell.flagged = False
-                        cell.hidden = False
+    def reveal_all(self, cell: Cell):
+        cell.value = CLICKED_MINE
+        self.state = LOSE
+        if SETTINGS["play_sounds"]:
+            threading.Thread(target=playsound, args=(
+                SOUNDS + "game-over.mp3",)).start()
 
-            return (x, y)
+        for list in self.contents:
+            for cell in list:
+                if not cell.flagged:
+                    cell.hidden = False
+                elif cell.value != MINE:
+                    cell.value = NOMINE
+                    cell.flagged = False
+                    cell.hidden = False
 
-        mine = None
-        if not self.check_cell(cell.x, cell.y):
-            cell.hidden = False
-            if self.check_saturation(cell.x, cell.y):
-                for y in range(-1, 2):
-                    for x in range(-1, 2):
-                        if 0 <= cell.x + x < SETTINGS["width"] and 0 <= cell.y + y < SETTINGS["height"]:
-                            adj_cell = self.contents[cell.y +
-                                                     y][cell.x + x]
-                            if not adj_cell.flagged:
-                                if self.reveal_next(adj_cell.x, adj_cell.y) == MINE:
-                                    mine = (adj_cell.x, adj_cell.y)
+        return (cell.x_index, cell.y_index)
+    
+    
+    def add_flags(self, x: int, y: int):
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                if 0 <= x + dx < SETTINGS["width"] and 0 <= y + dy < SETTINGS["height"]:
+                    adj_cell: Cell = self.contents[y + dy][x + dx]
+                    adj_cell.adj_flags += 1
 
-        return MINE if mine else None
-
-    def check_saturation(self, x: int, y: int) -> bool:
-        """This method checks if there are as much flags around a cell as the number on it.
-
-        Returns:
-            bool: True if as much flags, False if less or the cell is a mine.
-        """
-        adj_flags = 0
-        if self.contents[y][x].value not in {0, 1, 2, 3, 4, 5, 6, 7, 8}:
-            return False
-        else:
-            for a in range(-1, 2):
-                for b in range(-1, 2):
-                    if 0 <= x + a < SETTINGS["width"] and 0 <= y + b < SETTINGS["height"]:
-                        if self.contents[y + b][x + a].flagged:
-                            adj_flags += 1
-
-            if self.contents[y][x].value == adj_flags:
-                return True
-            else:
-                return False
-
-    def check_cell(self, x: int, y: int) -> bool:
-        if self.contents[y][x].hidden or self.clicked_cell == self.contents[y][x]:
-            self.clicked_cell = None
-            return False
-        return True
+    def remove_flags(self, x: int, y: int):
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                if 0 <= x + dx < SETTINGS["width"] and 0 <= y + dy < SETTINGS["height"]:
+                    adj_cell: Cell = self.contents[y + dy][x + dx]
+                    adj_cell.adj_flags -= 1
+    
