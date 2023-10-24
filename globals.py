@@ -48,8 +48,8 @@ LRB_BORDER: int = 16 * SETTINGS["scale"]
 FONT_SIZE = int(16 * SETTINGS["scale"])
 PAUSE_FONT_SIZE = int(40 * SETTINGS["scale"])
 
-HOST = SETTINGS["server_data"]["host"]  # The server's hostname or IP address
-PORT = SETTINGS["server_data"]["port"]  # The port used by the server
+HOST = SETTINGS["host"]  # The server's hostname or IP address
+PORT = SETTINGS["port"]  # The port used by the server
 MAX_MSG_LEN = 2048
 MAX_RETRIES = 3
 

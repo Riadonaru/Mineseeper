@@ -23,8 +23,6 @@ pygame.init()
 
 class Game(Client):
 
-    setting_names: List[str] = ["Width", "Height", "Mines%",
-                                "Scale", "Easy_Start", "Play_Sounds", "Allow_Commands"]
 
     def __init__(self) -> None:
         super().__init__()
@@ -41,10 +39,14 @@ class Game(Client):
             SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False)
         self.reset_btn = Cell(
             SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False)
-        self.boxes = [Textbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) if i <
-                      4 else Checkbox(TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i) for i in range(7)]
-        for i, name in enumerate(Game.setting_names):
-            self.boxes[i].populate_box(name)
+        self.boxes: pygame.Rect = []
+        for i, setting in enumerate(SETTINGS):
+            setting_type = type(SETTINGS[setting])
+            if setting_type is bool:
+                self.boxes.append(Checkbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
+            else:
+                self.boxes.append(Textbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
+               
         self.grid = Grid()
 
     def timer(self):

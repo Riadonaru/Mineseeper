@@ -11,14 +11,14 @@ class Textbox(pygame.Rect):
     box_height = CELL_EDGE / 2
     box_width = 55 * SETTINGS["scale"]
 
-    def __init__(self, top, left = box_left, width = box_width, height = box_height) -> None:
-        super().__init__(left, top, width, height)
-        self.font = pygame.font.Font(FONTS + "Font.ttf", int(CELL_EDGE / 2))
-        self.text = ""
-        self.name = None
+    def __init__(self, name: str, top, left = box_left, height = box_height) -> None:
+        self.name = name.capitalize().replace("_", " ")
         self.active = False
-        self.max_chars = (width - width % 25) / 25
         self.color = BLUE
+        self.text = str(SETTINGS[name])
+        self.max_chars = len(self.text)
+        self.font = pygame.font.Font(FONTS + "Font.ttf", int(CELL_EDGE / 2))
+        super().__init__(left, top, len(self.text) * 25 * SETTINGS["scale"], height)
 
     def text_handler(self, key: int, unicode):
         if self.active:
@@ -29,10 +29,6 @@ class Textbox(pygame.Rect):
             else:
                 if SETTINGS["play_sounds"]:
                     playsound(SOUNDS + "error.mp3", False)
-
-    def populate_box(self, name: str):
-        self.name = name
-        self.text = str(SETTINGS[name.lower()])
 
 
     def draw(self):
