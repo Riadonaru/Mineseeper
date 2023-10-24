@@ -5,16 +5,18 @@ from math import floor
 from typing import List
 
 import pygame
+from button import Button
 
 from cell import Cell
 from checkbox import Checkbox
 from client import Client
 from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
-                     DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOURGLASS, LOSE,
+                     DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOURGLASS, IMAGES, LOSE,
                      LRB_BORDER, MINE, PAUSE_FONT_SIZE, PAUSED, PLAYING,
                      PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
                      TOP_BORDER, WIN)
 from grid import Grid
+from screens import Screen
 from sprites import SPRITES
 from textbox import Textbox
 
@@ -29,8 +31,10 @@ class Game(Client):
         self.running = True
         self.elapsed_time = 0
         self.flagged_cells = 0
+        self.displayed_screen = Screen.MENU
         self.timerEvent = threading.Event()
         self.timer_thread = threading.Thread(target=self.timer)
+        self.start_button = Button(IMAGES + "start_btn.png")
         self.font = pygame.font.Font(
             FONTS + "Font.ttf", FONT_SIZE)
         self.pause_font = pygame.font.Font(
@@ -85,6 +89,7 @@ class Game(Client):
             return
         self.timerEvent.set()
         self.grid.state = PLAYING
+        self.displayed_screen = Screen.GAME
 
     def reveal(self, x: int, y: int):
         """This method reveals the cell at the given coordinates if possible.
@@ -178,6 +183,10 @@ class Game(Client):
                 sys.exit()  # TODO
             else:
                 self.reset()
+        elif not self.start_button.clicked and self.displayed_screen == Screen.MENU and self.start_button.collidepoint(event.pos):
+            self.displayed_screen = Screen.GAME
+            self.grid.state = PLAYING
+
 
 #-----#
 
@@ -202,7 +211,6 @@ class Game(Client):
         mines_left = self.font.render(
             str(self.grid.mines - self.flagged_cells), 0, BLACK)
         time_elapsed = self.font.render(str(self.elapsed_time), 0, BLACK)
-        DISP.fill(BG_COLOR)
         DISP.blits([(SPRITES[MINE], (LRB_BORDER, LRB_BORDER)),
                     (mines_left, mines_left.get_rect(
                         center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
@@ -215,29 +223,51 @@ class Game(Client):
 #-----#
 
     def draw_main(self):
-        if self.timerEvent.is_set():
-            for y in range(SETTINGS["height"]):
-                for x in range(SETTINGS["width"]):
-                    self.grid.contents[y][x].draw()
-        elif self.grid.state == SET:
-            text = self.pause_font.render("SETTINGS", 0, BLACK)
-            DISP.blit(text, text.get_rect(
-                center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
-            for box in self.boxes:
-                text = box.font.render(box.name.replace("_", " "), 0, BLACK)
-                box.draw()
-                if type(box) == Textbox:
-                    DISP.blit(text, (LRB_BORDER, box.top))
-                else:
-                    DISP.blit(text, (LRB_BORDER + box.left * 1.5, box.top))
 
-        else:
-            text = self.pause_font.render("PAUSED", 0, BLACK)
-            DISP.blit(text, text.get_rect(
-                center=(DISP_W // 2, DISP_H // 2)))
+        DISP.fill(BG_COLOR)
+        match (self.displayed_screen):
+            case Screen.MENU:
+                self.draw_main_menu()
+            case Screen.GAME:
+                self.draw_panel()
+                self.grid.draw()
+            case Screen.SETTINGS:
+                self.draw_panel()
+                self.draw_settings()
+            case Screen.PAUSE:
+                self.draw_panel()
+                self.draw_pause_menu()
 
-        if self.grid.state == WIN or self.grid.state == LOSE:
-            DISP.blit(SPRITES[self.grid.state], (LRB_BORDER, TOP_BORDER))
+
+
+
+#-----#
+
+    def draw_settings(self):
+        text = self.pause_font.render("SETTINGS", 0, BLACK)
+        DISP.blit(text, text.get_rect(
+            center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
+        for box in self.boxes:
+            text = box.font.render(box.name.replace("_", " "), 0, BLACK)
+            box.draw()
+            if type(box) == Textbox:
+                DISP.blit(text, (LRB_BORDER, box.top))
+            else:
+                DISP.blit(text, (LRB_BORDER + box.left * 1.5, box.top))
+
+#-----#
+
+    def draw_pause_menu(self):
+        text = self.pause_font.render("PAUSED", 0, BLACK)
+        DISP.blit(text, text.get_rect(
+            center=(DISP_W // 2, DISP_H // 2)))
+        
+
+    def draw_main_menu(self):
+        self.start_button.draw()
+
+
+
 
 # --------------------------------------------- #
   # Game Events:
@@ -259,13 +289,16 @@ class Game(Client):
             if self.grid.state == PLAYING:
                 if SETTING:
                     self.grid.state = SET
+                    self.displayed_screen = Screen.SETTINGS
                 else:
                     self.grid.state = PAUSED
+                    self.displayed_screen = Screen.PAUSE
             if self.timerEvent.is_set():
                 self.timerEvent.clear()
             elif keys[pygame.K_ESCAPE] and self.grid.state == PAUSED:
                 self.timerEvent.set()
                 self.grid.state = PLAYING
+                self.displayed_screen = Screen.GAME
             elif SETTING and self.grid.state == SET:
                 self.save_settings()
 
@@ -330,6 +363,7 @@ class Game(Client):
         self.grid.clicked_cell = None
         self.grid.troll_mode = False
         self.grid = Grid()
+        self.grid.state = PLAYING
 
 
 # ----------------------- #
@@ -342,19 +376,11 @@ class Game(Client):
             self.timer_thread.start()
             self.timerEvent.set()
 
-        self.play()
-
-# ----------------------- #
-
-    def play(self):
-        """This function has the main game loop and occupies the drawThread of the game.
-        """
-        global RESET
-
         while self.running:
             self.event_handler()
-            self.draw_panel()
             self.draw_main()
             self.pause_handler()
 
         pygame.quit()
+
+

@@ -5,7 +5,7 @@ import numpy as np
 from playsound import playsound
 
 from cell import Cell
-from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PLAYING, SETTINGS, SOUNDS
+from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PAUSED, SETTINGS, SOUNDS
 
 
 class Grid():
@@ -13,7 +13,7 @@ class Grid():
 
     def __init__(self) -> None:
         self.clicked_cell: Cell = None
-        self.state: int = PLAYING  # 1 for playing, 2 for paused, 3 for settings, 15 for win, 16 for lose.
+        self.state: int = PAUSED  # 1 for playing, 2 for paused, 3 for settings, 15 for win, 16 for lose.
         self.troll_mode: bool = False
         self.tiles = SETTINGS["width"] * SETTINGS["height"]
         self.mines = int(self.tiles * SETTINGS["mines%"] / 100)
@@ -90,9 +90,11 @@ class Grid():
         """
         cell: Cell = self.contents[y][x]
         if not cell.flagged:
+            if first:
+                cell.hidden = False
             if cell.value == MINE:
                 return self.reveal_all(cell)
-            elif first or (cell.hidden and not cell.flagged and cell.saturated()):
+            elif cell.saturated() and (first or (cell.hidden and not cell.flagged)):
                 cell.hidden = False
                 for dy in range(-1, 2):
                     for dx in range(-1, 2):
@@ -133,4 +135,9 @@ class Grid():
                 if 0 <= x + dx < SETTINGS["width"] and 0 <= y + dy < SETTINGS["height"]:
                     adj_cell: Cell = self.contents[y + dy][x + dx]
                     adj_cell.adj_flags -= 1
+
+    def draw(self):
+        for y in range(SETTINGS["height"]):
+            for x in range(SETTINGS["width"]):
+                self.contents[y][x].draw()
     
