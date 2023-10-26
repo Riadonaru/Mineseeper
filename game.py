@@ -36,7 +36,9 @@ class Game(Client):
         self.displayed_screen = Screen.MENU
         self.timerEvent = threading.Event()
         self.timer_thread = threading.Thread(target=self.timer)
-        self.start_button = Button(IMAGES + "start_btn.png")
+        self.start_button = Button(DISP_W // 2, TOP_BORDER * 2, "START")
+        self.bot_button = Button(DISP_W // 2, TOP_BORDER * 2 + 127, "AUTO SOLVER")
+        self.quit_button = Button(DISP_W // 2, TOP_BORDER * 2 + 255, "QUIT")
         self.settings_btn = Cell(
             SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False)
         self.reset_btn = Cell(
@@ -152,6 +154,15 @@ class Game(Client):
                 if not self.start_button.clicked and self.start_button.collidepoint(event.pos):
                     self.displayed_screen = Screen.GAME
                     self.grid.state = PLAYING
+                    self.start_button.clicked = True
+                else:
+                    self.start_button.clicked = False
+
+                if not self.quit_button.clicked and self.quit_button.collidepoint(event.pos):
+                    self.running = False
+                    self.quit_button.clicked = True
+                else:
+                    self.quit_button.clicked = False
 
             case Screen.GAME:
                 x = (event.pos[0] - LRB_BORDER) / CELL_EDGE
@@ -282,6 +293,8 @@ class Game(Client):
 
     def draw_main_menu(self):
         self.start_button.draw()
+        self.bot_button.draw()
+        self.quit_button.draw()
 
 
 
