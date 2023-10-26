@@ -2,7 +2,6 @@ import pygame
 
 from globals import BLACK, CELL_EDGE, DISP, FONTS, LRB_BORDER, SETTINGS, WHITE
 
-pygame.font.init()
 
 class Checkbox(pygame.Rect):
      
@@ -16,6 +15,8 @@ class Checkbox(pygame.Rect):
 
 
     def draw(self):
+        text = self.font.render(self.name.replace("_", " "), 0, BLACK)
+        DISP.blit(text, (LRB_BORDER + self.left * 1.5, self.top))
         pygame.draw.rect(DISP, WHITE, self)
         pygame.draw.rect(DISP, BLACK, self, 1)
         if self.active:

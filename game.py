@@ -25,6 +25,8 @@ pygame.init()
 
 class Game(Client):
 
+    font = pygame.font.Font(FONTS + "Font.ttf", FONT_SIZE)
+    pause_font = pygame.font.Font(FONTS + "Font.ttf", PAUSE_FONT_SIZE)
 
     def __init__(self) -> None:
         super().__init__()
@@ -35,21 +37,18 @@ class Game(Client):
         self.timerEvent = threading.Event()
         self.timer_thread = threading.Thread(target=self.timer)
         self.start_button = Button(IMAGES + "start_btn.png")
-        self.font = pygame.font.Font(
-            FONTS + "Font.ttf", FONT_SIZE)
-        self.pause_font = pygame.font.Font(
-            FONTS + "Font.ttf", PAUSE_FONT_SIZE)
         self.settings_btn = Cell(
             SETTINGS["width"] - 0.75, -2.75, value=GEAR, hidden=False)
         self.reset_btn = Cell(
             SETTINGS["width"] / 2 - 0.5, -2, value=RESET, hidden=False)
-        self.boxes: pygame.Rect = []
+        self.textboxes: List[Textbox] = []
+        self.checkboxes: List[Checkbox] = []
         for i, setting in enumerate(SETTINGS):
             setting_type = type(SETTINGS[setting])
             if setting_type is bool:
-                self.boxes.append(Checkbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
+                self.checkboxes.append(Checkbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
             else:
-                self.boxes.append(Textbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
+                self.textboxes.append(Textbox(setting, TOP_BORDER * 1.3 + (Textbox.box_height + 20) * i))
                
         self.grid = Grid()
 
@@ -65,19 +64,24 @@ class Game(Client):
         """
         error = False
         changed = False
-        for box in self.boxes:
+        for box in self.textboxes:
             setting = box.name.lower().replace(" ", "_")
-            if type(box) == Textbox:
-                setting_type = type(SETTINGS[setting])
+            setting_type = type(SETTINGS[setting])
+            if box.text != "":
                 try:
                     new_setting = setting_type(box.text)
+                    if new_setting != SETTINGS[setting]:
+                        SETTINGS[setting] = new_setting
+                        changed = True
                 except:
                     box.text = "ERR"
                     error = True
-                if new_setting != SETTINGS[setting]:
-                    SETTINGS[setting] = new_setting
-                    changed = True
-            elif not box.active == SETTINGS[setting]:
+            else:
+                box.text = str(SETTINGS[setting])
+
+        for box in self.checkboxes:
+            setting = box.name.lower().replace(" ", "_")
+            if not box.active == SETTINGS[setting]:
                 SETTINGS[setting] = box.active
                 changed = True
 
@@ -139,53 +143,67 @@ class Game(Client):
             game (Minesweeper.Game): The game to react to.
             event (pygame.event.Event, optional): The event associated with the left click.
         """
-
         global SETTING
 
-        x = (event.pos[0] - LRB_BORDER) / CELL_EDGE
-        y = (event.pos[1] - TOP_BORDER) / CELL_EDGE
-        if self.grid.state == PLAYING and TOP_BORDER < event.pos[1] < DISP_H - LRB_BORDER and LRB_BORDER < event.pos[0] < DISP_W - LRB_BORDER:
-            x = floor(x)
-            y = floor(y)
-            actions = {
-                1: self.reveal,
-                3: self.flag,
-            }
-            try:
-                actions[event.button](x, y)
-            except:
-                pass
 
-        elif self.grid.state in (PLAYING, SET) and self.settings_btn.collidepoint(event.pos[0], event.pos[1]):
-            if self.grid.troll_mode:
-                self.grid.troll()
-                for y in range(SETTINGS["height"]):
-                    for x in range(SETTINGS["width"]):
-                        self.grid.contents[y][x].hidden = False
-            else:
-                SETTING = True
 
-        elif self.grid.state == SET:
-            for box in self.boxes:
-                if type(box) == Textbox:
+        match (self.displayed_screen):
+            case Screen.MENU:
+                if not self.start_button.clicked and self.start_button.collidepoint(event.pos):
+                    self.displayed_screen = Screen.GAME
+                    self.grid.state = PLAYING
+
+            case Screen.GAME:
+                x = (event.pos[0] - LRB_BORDER) / CELL_EDGE
+                y = (event.pos[1] - TOP_BORDER) / CELL_EDGE
+                if self.grid.state == PLAYING and TOP_BORDER < event.pos[1] < DISP_H - LRB_BORDER and LRB_BORDER < event.pos[0] < DISP_W - LRB_BORDER:
+                    x = floor(x)
+                    y = floor(y)
+                    actions = {
+                        1: self.reveal,
+                        3: self.flag,
+                    }
+                    try:
+                        actions[event.button](x, y)
+                    except:
+                        pass
+
+                elif self.settings_btn.collidepoint(event.pos[0], event.pos[1]):
+                    if self.grid.troll_mode:
+                        self.grid.troll()
+                        for y in range(SETTINGS["height"]):
+                            for x in range(SETTINGS["width"]):
+                                self.grid.contents[y][x].hidden = False
+                    else:
+                        SETTING = True
+                elif self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
+                    if self.grid.troll_mode:
+                        SETTINGS["mines%"] = 15
+                        super().set_settings()
+                        self.running = False # TODO
+                    else:
+                        self.reset()
+
+            case Screen.SETTINGS:
+                for box in self.textboxes:
                     if box.collidepoint(event.pos):
                         box.active = True
                         box.text = ""
                     else:
                         box.active = False
-                elif box.collidepoint(event.pos):
-                    box.active = not box.active
 
-        elif self.grid.state in (PLAYING, WIN, LOSE) and self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
-            if self.grid.troll_mode:
-                SETTINGS["mines%"] = 15
-                super().set_settings()
-                sys.exit()  # TODO
-            else:
-                self.reset()
-        elif not self.start_button.clicked and self.displayed_screen == Screen.MENU and self.start_button.collidepoint(event.pos):
-            self.displayed_screen = Screen.GAME
-            self.grid.state = PLAYING
+                for box in self.checkboxes:
+                    if box.collidepoint(event.pos):
+                        box.active = not box.active
+
+                if self.settings_btn.collidepoint(event.pos[0], event.pos[1]):
+                    if self.grid.troll_mode:
+                        self.grid.troll()
+                        for y in range(SETTINGS["height"]):
+                            for x in range(SETTINGS["width"]):
+                                self.grid.contents[y][x].hidden = False
+                    else:
+                        SETTING = True
 
 
 #-----#
@@ -208,9 +226,9 @@ class Game(Client):
  # Draw events:
 
     def draw_panel(self):
-        mines_left = self.font.render(
+        mines_left = Game.font.render(
             str(self.grid.mines - self.flagged_cells), 0, BLACK)
-        time_elapsed = self.font.render(str(self.elapsed_time), 0, BLACK)
+        time_elapsed = Game.font.render(str(self.elapsed_time), 0, BLACK)
         DISP.blits([(SPRITES[MINE], (LRB_BORDER, LRB_BORDER)),
                     (mines_left, mines_left.get_rect(
                         center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
@@ -244,21 +262,20 @@ class Game(Client):
 #-----#
 
     def draw_settings(self):
-        text = self.pause_font.render("SETTINGS", 0, BLACK)
+        text = Game.pause_font.render("SETTINGS", 0, BLACK)
         DISP.blit(text, text.get_rect(
             center=(DISP_W // 2, TOP_BORDER + SETTINGS["scale"] * 10)))
-        for box in self.boxes:
-            text = box.font.render(box.name.replace("_", " "), 0, BLACK)
+        for box in self.textboxes:
             box.draw()
-            if type(box) == Textbox:
-                DISP.blit(text, (LRB_BORDER, box.top))
-            else:
-                DISP.blit(text, (LRB_BORDER + box.left * 1.5, box.top))
+        
+        for box in self.checkboxes:
+            box.draw()
+ 
 
 #-----#
 
     def draw_pause_menu(self):
-        text = self.pause_font.render("PAUSED", 0, BLACK)
+        text = Game.pause_font.render("PAUSED", 0, BLACK)
         DISP.blit(text, text.get_rect(
             center=(DISP_W // 2, DISP_H // 2)))
         
@@ -326,7 +343,7 @@ class Game(Client):
             self.reset_btn.value = COOL
             for list in self.grid.contents:
                 for cell in list:
-                    if cell.value != -1:
+                    if cell.value != MINE:
                         cell.hidden = False
             self.grid.state = WIN
 
@@ -342,9 +359,8 @@ class Game(Client):
                         self.highlight_cell(event)
                 case pygame.KEYDOWN:
                     if self.grid.state == SET:
-                        for box in self.boxes:
-                            if type(box) == Textbox:
-                                box.text_handler(event.key, event.unicode)
+                        for box in self.textboxes:
+                            box.text_handler(event.key, event.unicode)
                 case pygame.QUIT:
                     self.running = False
 

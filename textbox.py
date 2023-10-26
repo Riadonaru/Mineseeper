@@ -1,7 +1,7 @@
 import pygame
 from playsound import playsound
 
-from globals import (BG_COLOR, BLUE, CELL_EDGE, DISP, FONTS, LRB_BORDER,
+from globals import (BG_COLOR, BLACK, BLUE, CELL_EDGE, DISP, FONTS, LRB_BORDER,
                      SETTINGS, SOUNDS, WHITE)
 
 
@@ -20,6 +20,7 @@ class Textbox(pygame.Rect):
         self.font = pygame.font.Font(FONTS + "Font.ttf", int(CELL_EDGE / 2))
         super().__init__(left, top, len(self.text) * 25 * SETTINGS["scale"], height)
 
+
     def text_handler(self, key: int, unicode):
         if self.active:
             if key == pygame.K_BACKSPACE and len(self.text) > 0:
@@ -37,5 +38,7 @@ class Textbox(pygame.Rect):
         else:
             self.color = BG_COLOR
         pygame.draw.rect(DISP, self.color, self)
+        text = self.font.render(self.name.replace("_", " "), 0, BLACK)
         text_surface = self.font.render(self.text, True, WHITE)
+        DISP.blit(text, (LRB_BORDER, self.top))
         DISP.blit(text_surface, (self.x, self.y))
