@@ -16,9 +16,9 @@ BLUE = (173, 216, 230)
 BG_COLOR = (192, 192, 192)
 WHITE = (255, 255, 255)
 
-PREVIOUS = False
-CURRENT = False
-SETTING: bool = False
+PAUSE_WAS_PRESSED = False
+PAUSE_IS_PRESSED = False
+SETTING_BUTTON_PRESSED: bool = False
 
 CELL: int = -5
 FLAG: int = -4
@@ -32,7 +32,6 @@ DEAD: int = 12
 
 PLAYING: int = 1
 PAUSED: int = 2
-SET: int = 3
 WIN: int = 15
 LOSE: int = 16
 

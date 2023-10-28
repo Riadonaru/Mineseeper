@@ -10,11 +10,11 @@ from button import Button
 from cell import Cell
 from checkbox import Checkbox
 from client import Client
-from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, CURRENT, DEAD, DISP,
+from globals import (BG_COLOR, BLACK, CELL_EDGE, COOL, PAUSE_IS_PRESSED, DEAD, DISP,
                      DISP_H, DISP_W, FONT_SIZE, FONTS, GEAR, HOURGLASS, IMAGES, LOSE,
                      LRB_BORDER, MINE, PAUSE_FONT_SIZE, PAUSED, PLAYING,
-                     PREVIOUS, RESET, SET, SETTING, SETTINGS, SHOCKED, SMILE,
-                     TOP_BORDER, WIN)
+                     PAUSE_WAS_PRESSED, RESET, SETTING_BUTTON_PRESSED, SETTINGS, SHOCKED, SMILE,
+                     TOP_BORDER)
 from grid import Grid
 from screens import Screen
 from sprites import SPRITES
@@ -33,7 +33,7 @@ class Game(Client):
         self.running = True
         self.elapsed_time = 0
         self.flagged_cells = 0
-        self.displayed_screen = Screen.MENU
+        self.displayed_screen = Screen.MAIN
         self.timerEvent = threading.Event()
         self.timer_thread = threading.Thread(target=self.timer)
         self.start_button = Button(DISP_W // 2, TOP_BORDER * 2, "START")
@@ -56,7 +56,7 @@ class Game(Client):
 
     def timer(self):
         while self.running:
-            while self.grid.clicked_cell != None and self.grid.state == PLAYING:
+            while self.grid.enabled and self.grid.clicked_cell:
                 self.timerEvent.wait()
                 self.elapsed_time += 1
                 time.sleep(1)
@@ -93,9 +93,6 @@ class Game(Client):
             super().set_settings()
             self.running = False
             return
-        self.timerEvent.set()
-        self.grid.state = PLAYING
-        self.displayed_screen = Screen.GAME
 
     def reveal(self, x: int, y: int):
         """This method reveals the cell at the given coordinates if possible.
@@ -104,13 +101,14 @@ class Game(Client):
             x (int): The x coordinate of the cell.
             y (int): The y coordinate of the cell.
         """
-        if self.grid.clicked_cell == None and SETTINGS["easy_start"]:
+        if not self.grid.clicked_cell and SETTINGS["easy_start"]:
             self.grid.easy_start(x, y)
 
         self.grid.clicked_cell = self.grid.contents[y][x]
         mine_loc = self.grid.reveal_next(x, y)
         if mine_loc:
             self.reset_btn.value = DEAD
+            self.grid.enabled = False
             return mine_loc
 
     def flag(self, x: int, y: int):
@@ -133,6 +131,8 @@ class Game(Client):
         if self.flagged_cells == self.grid.mines:
             self.endgame_handler()
 
+    def solve(self):
+        pass # TODO
 
 
 # ----------------------Event-Handlers---------------------- #
@@ -145,29 +145,33 @@ class Game(Client):
             game (Minesweeper.Game): The game to react to.
             event (pygame.event.Event, optional): The event associated with the left click.
         """
-        global SETTING
+        global SETTING_BUTTON_PRESSED, RESET
 
 
-
+        RESET = self.reset_btn.value
         match (self.displayed_screen):
-            case Screen.MENU:
+            case Screen.MAIN:
                 if not self.start_button.clicked and self.start_button.collidepoint(event.pos):
                     self.displayed_screen = Screen.GAME
-                    self.grid.state = PLAYING
+                    self.grid.enabled = True
                     self.start_button.clicked = True
                 else:
                     self.start_button.clicked = False
+                    if not self.quit_button.clicked and self.quit_button.collidepoint(event.pos):
+                        self.running = False
+                        self.quit_button.clicked = True
+                    else:
+                        self.quit_button.clicked = False
+                        if not self.bot_button.clicked and self.bot_button.collidepoint(event.pos):
+                            self.displayed_screen = Screen.GAME
+                            self.bot_button.clicked = True
+                            self.solve()
 
-                if not self.quit_button.clicked and self.quit_button.collidepoint(event.pos):
-                    self.running = False
-                    self.quit_button.clicked = True
-                else:
-                    self.quit_button.clicked = False
 
             case Screen.GAME:
                 x = (event.pos[0] - LRB_BORDER) / CELL_EDGE
                 y = (event.pos[1] - TOP_BORDER) / CELL_EDGE
-                if self.grid.state == PLAYING and TOP_BORDER < event.pos[1] < DISP_H - LRB_BORDER and LRB_BORDER < event.pos[0] < DISP_W - LRB_BORDER:
+                if self.grid.enabled and TOP_BORDER < event.pos[1] < DISP_H - LRB_BORDER and LRB_BORDER < event.pos[0] < DISP_W - LRB_BORDER:
                     x = floor(x)
                     y = floor(y)
                     actions = {
@@ -186,7 +190,7 @@ class Game(Client):
                             for x in range(SETTINGS["width"]):
                                 self.grid.contents[y][x].hidden = False
                     else:
-                        SETTING = True
+                        SETTING_BUTTON_PRESSED = True
                 elif self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
                     if self.grid.troll_mode:
                         SETTINGS["mines%"] = 15
@@ -214,7 +218,7 @@ class Game(Client):
                             for x in range(SETTINGS["width"]):
                                 self.grid.contents[y][x].hidden = False
                     else:
-                        SETTING = True
+                        SETTING_BUTTON_PRESSED = True
 
 
 #-----#
@@ -226,12 +230,12 @@ class Game(Client):
             game (Minesweeper.Game): The game to react in.
             event (pygame.event.Event): The event associated with the left click.
         """
+        global RESET
+
+        
+        RESET = self.reset_btn.value
         if self.reset_btn.collidepoint(event.pos[0], event.pos[1]):
-            self.reset_btn.value = SHOCKED
-        elif self.grid.state == LOSE:
-            self.reset_btn.value = DEAD
-        elif self.reset_btn.value != RESET:
-            self.reset_btn.value = RESET
+            RESET = SHOCKED
 
 # --------------------------------------------- #
  # Draw events:
@@ -245,9 +249,8 @@ class Game(Client):
                         center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE / 1.75))),
                     (SPRITES[HOURGLASS], (LRB_BORDER, LRB_BORDER + CELL_EDGE)),
                     (time_elapsed, time_elapsed.get_rect(center=(LRB_BORDER + CELL_EDGE * 1.6, LRB_BORDER + CELL_EDGE * 1.6)))])
-
+        DISP.blit(SPRITES[RESET], self.reset_btn)
         self.settings_btn.draw()
-        self.reset_btn.draw()
 
 #-----#
 
@@ -255,7 +258,7 @@ class Game(Client):
 
         DISP.fill(BG_COLOR)
         match (self.displayed_screen):
-            case Screen.MENU:
+            case Screen.MAIN:
                 self.draw_main_menu()
             case Screen.GAME:
                 self.draw_panel()
@@ -304,35 +307,38 @@ class Game(Client):
 
     def pause_handler(self):
 
-        global CURRENT, PREVIOUS, SETTING
+        global PAUSE_IS_PRESSED, PAUSE_WAS_PRESSED, SETTING_BUTTON_PRESSED
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE] or SETTING:
-            if CURRENT:
-                PREVIOUS = True
-            CURRENT = True
-        else:
-            PREVIOUS = False
-            CURRENT = False
+        if RESET == SMILE and self.displayed_screen != Screen.MAIN:
+            if keys[pygame.K_ESCAPE] or SETTING_BUTTON_PRESSED:
+                if PAUSE_IS_PRESSED:
+                    PAUSE_WAS_PRESSED = True
+                PAUSE_IS_PRESSED = True
+            else:
+                PAUSE_WAS_PRESSED = False
+                PAUSE_IS_PRESSED = False
 
-        if CURRENT and not PREVIOUS:
-            if self.grid.state == PLAYING:
-                if SETTING:
-                    self.grid.state = SET
-                    self.displayed_screen = Screen.SETTINGS
-                else:
-                    self.grid.state = PAUSED
-                    self.displayed_screen = Screen.PAUSE
-            if self.timerEvent.is_set():
-                self.timerEvent.clear()
-            elif keys[pygame.K_ESCAPE] and self.grid.state == PAUSED:
-                self.timerEvent.set()
-                self.grid.state = PLAYING
-                self.displayed_screen = Screen.GAME
-            elif SETTING and self.grid.state == SET:
-                self.save_settings()
+            if PAUSE_IS_PRESSED and not PAUSE_WAS_PRESSED:
+                self.grid.enabled = not self.grid.enabled
+                if self.displayed_screen == Screen.GAME:
+                    if SETTING_BUTTON_PRESSED:
+                        self.displayed_screen = Screen.SETTINGS
+                    else:
+                        self.displayed_screen = Screen.PAUSE
+                if self.timerEvent.is_set():
+                    self.timerEvent.clear()
+                elif keys[pygame.K_ESCAPE] and self.displayed_screen == Screen.PAUSE:
+                    self.timerEvent.set()
+                    self.displayed_screen = Screen.GAME
+                elif SETTING_BUTTON_PRESSED and self.displayed_screen == Screen.SETTINGS:
+                    self.timerEvent.set()
+                    self.displayed_screen = Screen.GAME
+                    self.save_settings()
+        elif keys[pygame.K_ESCAPE] and RESET == SHOCKED:
+            print("LOL")
 
-        SETTING = False
+        SETTING_BUTTON_PRESSED = False
 
 
 #-----#
@@ -352,17 +358,19 @@ class Game(Client):
                 break
 
         else:
-            RESET = COOL
             self.reset_btn.value = COOL
+            self.grid.enabled = False
             for list in self.grid.contents:
                 for cell in list:
                     if cell.value != MINE:
                         cell.hidden = False
-            self.grid.state = WIN
 
 #-----#
 
     def event_handler(self):
+        
+        global RESET
+
         for event in pygame.event.get():
             match event.type:
                 case pygame.MOUSEBUTTONDOWN:
@@ -371,7 +379,7 @@ class Game(Client):
                     if self.timerEvent.is_set():
                         self.highlight_cell(event)
                 case pygame.KEYDOWN:
-                    if self.grid.state == SET:
+                    if self.displayed_screen == Screen.SETTINGS:
                         for box in self.textboxes:
                             box.text_handler(event.key, event.unicode)
                 case pygame.QUIT:
@@ -384,16 +392,13 @@ class Game(Client):
     def reset(self):
         """Resets the Game
         """
-        global RESET
-
-        RESET = SMILE
+        self.reset_btn.value = SMILE
         self.elapsed_time = 0
         self.flagged_cells = 0
         self.grid.clicked_cell = None
         self.grid.troll_mode = False
         self.grid = Grid()
-        self.grid.state = PLAYING
-
+        self.grid.enabled = True
 
 # ----------------------- #
 
@@ -405,10 +410,17 @@ class Game(Client):
             self.timer_thread.start()
             self.timerEvent.set()
 
+        # fps = 0
+        # temp = self.elapsed_time
         while self.running:
             self.event_handler()
             self.draw_main()
             self.pause_handler()
+            # fps += 1
+            # if temp != self.elapsed_time:
+            #     temp = self.elapsed_time
+            #     print(fps)
+            #     fps = 0
 
         pygame.quit()
 

@@ -3,8 +3,6 @@ import pygame
 from globals import CELL, CELL_EDGE, DISP, FLAG, LRB_BORDER, TOP_BORDER
 from sprites import SPRITES
 
-import numpy as np
-
 
 class Cell(pygame.Rect):
 

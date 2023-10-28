@@ -5,7 +5,7 @@ import numpy as np
 from playsound import playsound
 
 from cell import Cell
-from globals import CLICKED_MINE, LOSE, MINE, NOMINE, PAUSED, SETTINGS, SOUNDS
+from globals import CLICKED_MINE, DEAD, RESET, MINE, NOMINE, PAUSED, SETTINGS, SOUNDS
 
 
 class Grid():
@@ -13,7 +13,7 @@ class Grid():
 
     def __init__(self) -> None:
         self.clicked_cell: Cell = None
-        self.state: int = PAUSED  # 1 for playing, 2 for paused, 3 for settings, 15 for win, 16 for lose.
+        self.enabled = False
         self.troll_mode: bool = False
         self.tiles = SETTINGS["width"] * SETTINGS["height"]
         self.mines = int(self.tiles * SETTINGS["mines%"] / 100)
@@ -105,7 +105,6 @@ class Grid():
 
     def reveal_all(self, cell: Cell):
         cell.value = CLICKED_MINE
-        self.state = LOSE
         if SETTINGS["play_sounds"]:
             threading.Thread(target=playsound, args=(
                 SOUNDS + "game-over.mp3",)).start()
