@@ -5,7 +5,7 @@ import socket
 import threading
 import time
 
-from playsound import playsound
+# from playsound import playsound
 
 from globals import (HOST, MAX_MSG_LEN, MAX_RETRIES, PATH, PORT, SETTINGS,
                      SOUNDS)
@@ -71,8 +71,8 @@ class Client:
             case"client":
                 res = "Hello from client %i" % self.id
 
-            case "sound":
-                playsound(SOUNDS + "game-over.mp3")
+            # case "sound":
+            #     playsound(SOUNDS + "game-over.mp3")
 
             case "get":
                 res = ""

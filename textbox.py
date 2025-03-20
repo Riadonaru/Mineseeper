@@ -1,5 +1,5 @@
 import pygame
-from playsound import playsound
+# from playsound import playsound
 
 from globals import (BG_COLOR, BLACK, BLUE, CELL_EDGE, DISP, FONTS, LRB_BORDER,
                      SETTINGS, SOUNDS, WHITE)
@@ -29,7 +29,8 @@ class Textbox(pygame.Rect):
                 self.text += unicode
             else:
                 if SETTINGS["play_sounds"]:
-                    playsound(SOUNDS + "error.mp3", False)
+                    pass
+                    # playsound(SOUNDS + "error.mp3", False)
 
 
     def draw(self):

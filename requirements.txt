@@ -1,3 +1,5 @@
-numpy
-pygame
-playsound
+Package Version
+------- -------
+numpy   2.2.4
+pip     24.0
+pygame  2.6.1

@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Version=1.0
+Version=1.1
 Name=Minesweeper
 Comment=Liad's Minesweeper
 Exec=minesweeper
-Icon=/home/liad/Documents/Projects/Python/Games/Minesweeper/files/icon.png
+Icon=/home/liad/Documents/Projects/Complete/minesweeper-Python/images/icon.png
 Terminal=false
 Categories=Game;Application;

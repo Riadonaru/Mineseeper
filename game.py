@@ -1,8 +1,11 @@
+from ast import Tuple
+import random
 import sys
 import threading
 import time
 from math import floor
 from typing import List
+import numpy as np
 
 import pygame
 from button import Button
@@ -101,12 +104,15 @@ class Game(Client):
             x (int): The x coordinate of the cell.
             y (int): The y coordinate of the cell.
         """
+        global RESET
+
         if not self.grid.clicked_cell and SETTINGS["easy_start"]:
             self.grid.easy_start(x, y)
 
         self.grid.clicked_cell = self.grid.contents[y][x]
         mine_loc = self.grid.reveal_next(x, y)
         if mine_loc:
+            RESET = DEAD
             self.reset_btn.value = DEAD
             self.grid.enabled = False
             return mine_loc
@@ -132,8 +138,51 @@ class Game(Client):
             self.endgame_handler()
 
     def solve(self):
-        pass # TODO
+        maxy, maxx = self.grid.contents.shape
+        memory = []
+        firstx = random.randint(0, maxx - 1)
+        firsty = random.randint(0, maxy - 1)
+        self.reveal(firstx, firsty)
+        for x in range(maxx):
+            for y in range(maxy):
+                if not self.grid.contents[y][x].hidden:
+                    for dx in range(-1, 2):
+                        for dy in range(-1, 2):
+                            if 0 <= y + dy < maxy and 0 <= x + dx < maxx and self.grid.contents[y + dy][x + dx].hidden:
+                                if (x + dx, y + dy) not in memory:
+                                    memory.append((x + dx, y + dy))
+        
 
+        print(memory)
+        print(self.snakify(memory))
+
+        
+    def snakify(self, l: list):
+        next_x, next_y = l[0]
+        sorted_l = []
+        for _ in range(10):
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    if (next_x + dx, next_y + dy) in l:
+                        sorted_l.append((next_x + dx, next_y + dy))
+                        l.remove((next_x + dx, next_y + dy))
+                        next_x, next_y = (next_x + dx, next_y + dy)
+                        break
+                break
+
+        return sorted_l
+                
+
+                        
+
+    def not_over(self):
+        maxy, maxx = self.grid.contents.shape
+        for x in range(maxx):
+            for y in range(maxy):
+                if not self.grid.contents[y][x].flagged and self.grid.contents[y][x].hidden:
+                    return True
+        return False
+    
 
 # ----------------------Event-Handlers---------------------- #
  # Cursor Events:
@@ -148,7 +197,6 @@ class Game(Client):
         global SETTING_BUTTON_PRESSED, RESET
 
 
-        RESET = self.reset_btn.value
         match (self.displayed_screen):
             case Screen.MAIN:
                 if not self.start_button.clicked and self.start_button.collidepoint(event.pos):
@@ -165,7 +213,7 @@ class Game(Client):
                         if not self.bot_button.clicked and self.bot_button.collidepoint(event.pos):
                             self.displayed_screen = Screen.GAME
                             self.bot_button.clicked = True
-                            self.solve()
+                            threading.Thread(target=self.solve).start()
 
 
             case Screen.GAME:
@@ -358,6 +406,7 @@ class Game(Client):
                 break
 
         else:
+            RESET = COOL
             self.reset_btn.value = COOL
             self.grid.enabled = False
             for list in self.grid.contents:
